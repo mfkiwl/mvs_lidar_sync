@@ -128,12 +128,13 @@ static void *WorkThread(void *pUser)
   {
     ros::spinOnce();
     nRet = MV_CC_GetOneFrameTimeout(pUser, pData, nDataSize, &stImageInfo, 1000);
-    while(!(gps_cur_t-gps_pre_t < 0.2 && gps_cur_t-gps_pre_t > 0.05))
+    ros::Time begin = ros::Time::now();
+    while(!(gps_cur_t-gps_pre_t < 0.15 && gps_cur_t-gps_pre_t > 0.05))
     {
       gps_pre_t = gps_cur_t;
       ros::spinOnce();
     }
-
+    ROS_INFO_STREAM("image waiting time "<<(ros::Time::now()-begin).toSec()*1000<<"ms");
     if(nRet == MV_OK)
     {
       ros::Time rcv_time = ros::Time().fromSec(gps_cur_t);
@@ -161,15 +162,15 @@ static void *WorkThread(void *pUser)
   return 0;
 }
 
-// void timeCallback(const livox_ros_driver::CustomMsg::ConstPtr& msg)
-// {
-//   gps_cur_t = msg->header.stamp.toSec();
-// }
-
-void timeCallback(const sensor_msgs::PointCloud2ConstPtr& msg)
+void timeCallback(const livox_ros_driver::CustomMsg::ConstPtr& msg)
 {
   gps_cur_t = msg->header.stamp.toSec();
 }
+
+// void timeCallback(const sensor_msgs::PointCloud2ConstPtr& msg)
+// {
+//   gps_cur_t = msg->header.stamp.toSec();
+// }
 
 int main(int argc, char **argv)
 {
@@ -196,8 +197,8 @@ int main(int argc, char **argv)
   CameraName = camera_name;
   pub = it.advertise(pub_topic, 1);
 
-  ros::Subscriber sub = nh.subscribe("ouster/points", 1, timeCallback);
-  // ros::Subscriber sub = nh.subscribe("livox/lidar", 1, timeCallback);
+  // ros::Subscriber sub = nh.subscribe("ouster/points", 1, timeCallback);
+  ros::Subscriber sub = nh.subscribe("livox/lidar", 1, timeCallback);
 
   while(ros::ok())
   {
